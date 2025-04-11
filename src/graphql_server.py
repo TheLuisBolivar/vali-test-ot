@@ -20,9 +20,10 @@ from strawberry.asgi import GraphQL
 from datetime import datetime
 import uvicorn
 from fastapi import FastAPI
-from services.optimize_service import run_optimization
+from src.services.optimize_service import run_optimization
 import time
 import logging
+import pandas as pd
 
 # Directorio donde se almacenan los resultados
 RESULTS_DIR = 'results'

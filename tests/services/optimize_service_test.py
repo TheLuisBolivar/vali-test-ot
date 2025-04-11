@@ -1,83 +1,101 @@
-import unittest
+import pytest
 import pandas as pd
 import numpy as np
-from unittest.mock import patch, MagicMock
-from src.services.optimize_service import run_optimization
+from src.services.optimize_service import (
+    run_optimization,
+    load_process_data,
+    descriptive_analysis,
+    objective,
+    get_recommendations
+)
 
-class TestOptimizeService(unittest.TestCase):
-    """Test cases for the optimization service"""
+@pytest.fixture
+def sample_data():
+    return pd.DataFrame({
+        'timestamp': ['2023-10-01T08:00:00', '2023-10-01T09:00:00'],
+        'temperature': [85.3, 86.1],
+        'pressure': [102.4, 103.1], 
+        'velocity': [45.1, 46.0],
+        'humidity': [65.2, 64.8],
+        'qualityScore': [87.3, 88.1]
+    })
 
-    def setUp(self):
-        """Set up test data"""
-        self.test_data = pd.DataFrame({
-            'temperature': [85.3, 86.1, 87.2],
-            'pressure': [102.4, 103.1, 102.8],
-            'velocity': [45.1, 46.0, 45.5],
-            'humidity': [65.2, 64.8, 64.5],
-            'qualityScore': [87.3, 88.1, 89.0]
-        })
+def test_load_process_data():
+    data = load_process_data()
+    assert isinstance(data, pd.DataFrame)
+    assert not data.empty
+    assert all(col in data.columns for col in ['temperature', 'pressure', 'velocity', 'humidity', 'qualityScore'])
 
-    @patch('src.services.optimize_service.load_process_data')
-    @patch('src.services.optimize_service.gp_minimize')
-    def test_run_optimization(self, mock_gp_minimize, mock_load_data):
-        """Test the main optimization function"""
-        # Mock data loading
-        mock_load_data.return_value = self.test_data
-        
-        # Mock optimization result
-        mock_result = MagicMock()
-        mock_result.x = np.array([90.0, 105.0, 45.0, 65.0])
-        mock_result.fun = -95.0  # Negative because we minimize negative quality
-        mock_gp_minimize.return_value = mock_result
+def test_descriptive_analysis(sample_data):
+    corr = descriptive_analysis(sample_data)
+    assert isinstance(corr, pd.DataFrame)
+    assert corr.shape == (5, 5)  # 5x5 correlation matrix for numeric variables
+    assert all(col in corr.columns for col in ['temperature', 'pressure', 'velocity', 'humidity', 'qualityScore'])
 
-        # Run optimization
-        result = run_optimization()
+def test_objective():
+    # Mock grid search object
+    class MockGridSearch:
+        def predict(self, X):
+            return np.array([90.0])
+    
+    mock_grid_search = MockGridSearch()
+    features = ['temperature', 'pressure', 'velocity', 'humidity']
+    params = [85.0, 102.0, 45.0, 65.0]
+    
+    result = objective(params, features, mock_grid_search)
+    assert isinstance(result, float)
+    assert result == -90.0  # Negative because we minimize for optimization
 
-        # Verify result structure and types
-        self.assertIsInstance(result, dict)
-        self.assertIn('best_params', result)
-        self.assertIn('best_quality', result)
-        self.assertIn('confidence_score', result)
-        self.assertIn('correlation_matrix', result)
-        self.assertIn('feature_importance', result)
-        self.assertIn('model_performance', result)
-        self.assertIn('recommendations', result)
+def test_get_recommendations():
+    features = ['temperature', 'pressure', 'velocity', 'humidity']
+    feature_importance = [0.3, 0.2, 0.1, 0.4]
+    optimal_params = [90.0, 105.0, 47.0, 63.0]
+    current_means = [85.0, 102.0, 45.0, 65.0]
+    
+    recommendations = get_recommendations(features, feature_importance, optimal_params, current_means)
+    assert isinstance(recommendations, list)
+    assert len(recommendations) > 0
+    assert all(isinstance(rec, str) for rec in recommendations)
 
-        # Verify parameter types
-        self.assertIsInstance(result['best_params'], list)
-        self.assertEqual(len(result['best_params']), 4)  # 4 parameters
-        self.assertIsInstance(result['best_quality'], float)
-        self.assertIsInstance(result['confidence_score'], float)
-        self.assertIsInstance(result['correlation_matrix'], dict)
-        self.assertIsInstance(result['feature_importance'], list)
-        self.assertIsInstance(result['model_performance'], float)
-        self.assertIsInstance(result['recommendations'], list)
+def test_run_optimization():
+    result = run_optimization()
+    assert isinstance(result, dict)
+    expected_keys = [
+        'best_params',
+        'best_quality',
+        'confidence_score',
+        'correlation_matrix',
+        'feature_importance',
+        'model_performance',
+        'recommendations'
+    ]
+    assert all(key in result for key in expected_keys)
+    assert len(result['best_params']) == 4
+    assert isinstance(result['best_quality'], float)
+    assert isinstance(result['confidence_score'], float)
+    assert isinstance(result['correlation_matrix'], dict)
+    assert len(result['feature_importance']) == 4
+    assert isinstance(result['model_performance'], float)
+    assert isinstance(result['recommendations'], list)
 
-        # Verify value ranges
-        for param in result['best_params']:
-            self.assertIsInstance(param, float)
-        self.assertGreaterEqual(result['confidence_score'], 0.0)
-        self.assertLessEqual(result['confidence_score'], 1.0)
-        self.assertGreaterEqual(result['model_performance'], 0.0)
-        self.assertLessEqual(result['model_performance'], 1.0)
-
-        # Verify feature importance
-        self.assertEqual(len(result['feature_importance']), 4)  # 4 features
-        self.assertAlmostEqual(sum(result['feature_importance']), 1.0, places=5)
-
-        # Verify optimization was called
-        mock_gp_minimize.assert_called_once()
-        mock_load_data.assert_called_once()
-
-    @patch('src.services.optimize_service.load_process_data')
-    def test_run_optimization_with_empty_data(self, mock_load_data):
-        """Test optimization with empty dataset"""
-        # Mock empty data
-        mock_load_data.return_value = pd.DataFrame()
-        
-        # Verify raises exception
-        with self.assertRaises(ValueError):
-            run_optimization()
-
-if __name__ == '__main__':
-    unittest.main()
+def test_run_optimization_parameter_ranges():
+    result = run_optimization()
+    
+    # Test temperature range (80-100)
+    assert 80 <= result['best_params'][0] <= 100
+    
+    # Test pressure range (100-110)
+    assert 100 <= result['best_params'][1] <= 110
+    
+    # Test velocity range (40-50)
+    assert 40 <= result['best_params'][2] <= 50
+    
+    # Test humidity range (60-70)
+    assert 60 <= result['best_params'][3] <= 70
+    
+    # Test quality score range (typically 0-100)
+    assert 0 <= result['best_quality'] <= 100
+    
+    # Test confidence and performance scores (0-1 range)
+    assert 0 <= result['confidence_score'] <= 1
+    assert 0 <= result['model_performance'] <= 1

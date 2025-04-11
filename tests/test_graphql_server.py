@@ -270,8 +270,9 @@ class TestGraphQLServer(unittest.TestCase):
                 pressure=104.5,
                 velocity=45.5,
                 humidity=62.0,
-                predictedQuality=91.2,
-                confidenceScore=0.98
+                predicted_quality=91.2,
+                confidence_score=0.98,
+                optimization_time=1.5
             )
             
             # Verificar que la mutation fue exitosa

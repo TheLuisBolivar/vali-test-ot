@@ -121,16 +121,18 @@ def load_process_data() -> pd.DataFrame:
 
 def descriptive_analysis(data: pd.DataFrame) -> pd.DataFrame:
     """
-    Performs descriptive analysis and correlation matrix calculation on process data.
-    Prints descriptive statistics and correlation matrix, and returns the correlation matrix.
-    
+    Performs descriptive analysis on process data.
+
     Args:
-        data (pd.DataFrame): DataFrame containing process variables
-        
+        data: DataFrame with process variables
+
     Returns:
         pd.DataFrame: Correlation matrix of the process variables
     """
-    corr = data.corr()
+    # Select only numeric columns for correlation
+    numeric_cols = ['temperature', 'pressure', 'velocity', 'humidity', 'qualityScore']
+    corr = data[numeric_cols].corr()
+    
     logging.info("[descriptive_analysis]: Data Description:")
     logging.info(data.describe())
     
