@@ -16,6 +16,7 @@ uvicorn = "^0.25.0"
 scipy = "^1.11.4"
 requests = "^2.31.0"
 strawberry-graphql = "^0.263.0"
+scikit-optimize = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.0.2"

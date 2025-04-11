@@ -1,11 +1,11 @@
 {
   "optimalParameters": {
-    "temperature": 89.0,
-    "pressure": 104.5,
-    "velocity": 45.5,
-    "humidity": 62.0
+    "temperature": 93.0,
+    "pressure": 110.0,
+    "velocity": 40.0,
+    "humidity": 60.0
   },
-  "predictedQuality": 91.2,
-  "confidenceScore": 0.98,
-  "optimizationTime": 0.0
+  "predictedQuality": 90.73000000000002,
+  "confidenceScore": 0.9811320970042791,
+  "optimizationTime": 26.733036041259766
 }

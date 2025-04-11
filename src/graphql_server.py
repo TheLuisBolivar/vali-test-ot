@@ -20,7 +20,8 @@ from strawberry.asgi import GraphQL
 from datetime import datetime
 import uvicorn
 from fastapi import FastAPI
-import pandas as pd
+from services.optimize_service import run_optimization
+import time
 
 # Directorio donde se almacenan los resultados
 RESULTS_DIR = 'results'
@@ -217,8 +218,9 @@ class Mutation:
         pressure: float, 
         velocity: float, 
         humidity: float,
-        predictedQuality: float,
-        confidenceScore: float
+        predicted_quality: float,
+        confidence_score: float,
+        optimization_time: float,
     ) -> bool:
         """Actualiza los resultados de optimización con nuevos parámetros."""
         results = {
@@ -228,9 +230,9 @@ class Mutation:
                 'velocity': velocity,
                 'humidity': humidity
             },
-            'predictedQuality': predictedQuality,
-            'confidenceScore': confidenceScore,
-            'optimizationTime': 0.0  # No calculado en esta operación
+            'predictedQuality': predicted_quality,
+            'confidenceScore': confidence_score,
+            'optimizationTime': optimization_time
         }
         return save_optimization_results(results)
     
@@ -255,6 +257,41 @@ class Mutation:
             'recommendations': recommendations
         }
         return save_analysis_results(results)
+
+    @strawberry.mutation
+    def run_optimization(self) -> bool:
+        start_time = time.time()
+        optimization_results = run_optimization()
+        optimization_time = time.time() - start_time
+        best_params = optimization_results['best_params']
+        best_quality = optimization_results['best_quality']
+        confidence_score = optimization_results['confidence_score']        
+        correlation_matrix = optimization_results['confidence_score']
+        feature_importance = optimization_results['feature_importance']
+        model_performance = optimization_results['model_performance']
+        recomendations = optimization_results['recommendations']
+        
+        # Usar las funciones de utilidad directamente
+        save_optimization_results({
+            'optimalParameters': {
+                'temperature': best_params[0],
+                'pressure': best_params[1],
+                'velocity': best_params[2],
+                'humidity': best_params[3]
+            },
+            'predictedQuality': best_quality,
+            'confidenceScore': confidence_score,
+            'optimizationTime': optimization_time
+        })
+        
+        save_analysis_results({
+            'correlationMatrix': correlation_matrix,
+            'featureImportance': feature_importance,
+            'modelPerformance': model_performance,
+            'recommendations': recomendations
+        })
+        
+        return True
 
 # Crear esquema GraphQL
 schema = strawberry.Schema(query=Query, mutation=Mutation)
