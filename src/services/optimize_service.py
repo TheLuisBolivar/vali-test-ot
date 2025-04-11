@@ -1,4 +1,5 @@
 import pandas as pd
+import logging
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
@@ -10,7 +11,6 @@ from skopt import gp_minimize
 RANDOM_FOREST_REGRESSOR = 42
 RESULTS_DIR = 'results'
 
-            
 def run_optimization():
     """
     Main optimization method that orchestrates the optimization process
@@ -46,26 +46,26 @@ def run_optimization():
     grid_search = GridSearchCV(pipeline, param_grid, cv=5, scoring='r2')
     grid_search.fit(X_train, y_train)
     
-    print("\nBest hyperparameters found (GridSearchCV):")
-    print(grid_search.best_params_)
-    print("Best training score (GridSearchCV):", grid_search.best_score_)
+    logging.info("\nBest hyperparameters found (GridSearchCV):")
+    logging.info(grid_search.best_params_)
+    logging.info("Best training score (GridSearchCV): %s", grid_search.best_score_)
     
     # Model validation
     y_pred = grid_search.predict(X_test)
     r2 = r2_score(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
     
-    print("\nValidation on test set:")
-    print("R²:", r2)
-    print("Mean Squared Error:", mse)
+    logging.info("\nValidation on test set:")
+    logging.info("R²: %s", r2)
+    logging.info("Mean Squared Error: %s", mse)
     
     # Get feature importance from the best model
     best_model = grid_search.best_estimator_.named_steps['regressor']
     feature_importance = best_model.feature_importances_
     
-    print("\nFeature Importance:")
+    logging.info("\nFeature Importance:")
     for feature, importance in zip(features, feature_importance):
-        print(f"{feature}: {importance}")
+        logging.info("%s: %s", feature, importance)
     
     # Search space for each variable
     space = [
@@ -86,18 +86,19 @@ def run_optimization():
     best_params = [float(param) for param in res.x]  # Convert numpy values to Python floats
     best_quality = float(-res.fun)  # Convert minimization to maximum quality value and to float
     
-    print("\nBest optimized parameters (gp_minimize):")
-    print(f"Temperature: {best_params[0]}, Pressure: {best_params[1]}, Velocity: {best_params[2]}, Humidity: {best_params[3]}")
-    print("Predicted optimal quality:", best_quality)
+    logging.info("\nBest optimized parameters (gp_minimize):")
+    logging.info("Temperature: %s, Pressure: %s, Velocity: %s, Humidity: %s", 
+                best_params[0], best_params[1], best_params[2], best_params[3])
+    logging.info("Predicted optimal quality: %s", best_quality)
 
     # Calculate model performance as average of R2 and grid search best score
     model_performance = float((r2 + grid_search.best_score_) / 2)  # Convert to float
 
     recommendations = get_recommendations(features, feature_importance, best_params, X.mean())
     
-    print("\nRecommendations:")
+    logging.info("\nRecommendations:")
     for rec in recommendations:
-        print(f"- {rec}")
+        logging.info("- %s", rec)
 
     return {
         'best_params': best_params,
@@ -130,11 +131,11 @@ def descriptive_analysis(data: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: Correlation matrix of the process variables
     """
     corr = data.corr()
-    print("[descriptive_analysis]: Data Description:")
-    print(data.describe())
+    logging.info("[descriptive_analysis]: Data Description:")
+    logging.info(data.describe())
     
-    print("[descriptive_analysis]: Correlation Matrix:")
-    print(corr)
+    logging.info("[descriptive_analysis]: Correlation Matrix:")
+    logging.info(corr)
 
     return corr
 

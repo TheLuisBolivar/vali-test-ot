@@ -22,6 +22,7 @@ import uvicorn
 from fastapi import FastAPI
 from services.optimize_service import run_optimization
 import time
+import logging
 
 # Directorio donde se almacenan los resultados
 RESULTS_DIR = 'results'
@@ -84,7 +85,7 @@ def load_process_data():
             ]
         return []
     except Exception as e:
-        print(f"Error loading process data: {e}")
+        logging.error(f"Error loading process data: {e}")
         return []
 
 def load_optimization_results():
@@ -107,7 +108,7 @@ def load_optimization_results():
             )
         return None
     except Exception as e:
-        print(f"Error loading optimization results: {e}")
+        logging.error(f"Error loading optimization results: {e}")
         return None
 
 def load_analysis_results():
@@ -125,7 +126,7 @@ def load_analysis_results():
             )
         return None
     except Exception as e:
-        print(f"Error loading analysis results: {e}")
+        logging.error(f"Error loading analysis results: {e}")
         return None
 
 def save_optimization_results(results):
@@ -138,7 +139,7 @@ def save_optimization_results(results):
             json.dump(results, f, indent=2)
         return True
     except Exception as e:
-        print(f"Error saving optimization results: {e}")
+        logging.error(f"Error saving optimization results: {e}")
         return False
 
 def save_analysis_results(results):
@@ -151,7 +152,7 @@ def save_analysis_results(results):
             json.dump(results, f, indent=2)
         return True
     except Exception as e:
-        print(f"Error saving analysis results: {e}")
+        logging.error(f"Error saving analysis results: {e}")
         return False
 
 def append_process_data(data):
@@ -182,7 +183,7 @@ def append_process_data(data):
         
         return True
     except Exception as e:
-        print(f"Error appending process data: {e}")
+        logging.error(f"Error appending process data: {e}")
         return False
 
 # Definición del esquema GraphQL
@@ -313,7 +314,7 @@ def read_root():
 
 def main():
     """Inicia el servidor GraphQL."""
-    print("Iniciando servidor GraphQL en http://localhost:8000/graphql")
+    logging.info("Iniciando servidor GraphQL en http://localhost:8000/graphql")
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
